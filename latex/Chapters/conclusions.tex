@@ -1,0 +1,13 @@
+\chapter{Conclusion}
+
+\label{Chapter6}
+
+This thesis studies markdown price optimization in fashion retail from a causal machine learning perspective. The motivation comes from a practical limitation of the existing predictive pipeline: although the LightGBM baseline can forecast observed sales with reasonable accuracy, its simulated elasticity curves often lead to extreme minimum discount recommendations.
+
+The thesis argues that this issue comes from the difference between prediction and intervention. Historical discounts are not randomly assigned; they depend on stock, previous sales, product characteristics, calendar position, and other business signals. Therefore, the observed relationship between discounts and sales does not directly represent the causal effect of changing price.
+
+To address this problem, the thesis proposes a Double Machine Learning framework combined with a Causal Forest final stage. DML residualizes both demand and discounted price with respect to pre-pricing confounders, while the Causal Forest estimates heterogeneous local price effects at reference-week level. The final selected specification uses discounted price, the selling price after markdown, as the treatment and a log-linear outcome transformation, which is better aligned with the revenue objective and can generate interior revenue optima.
+
+The empirical results support the usefulness of the causal approach. Predictive performance remains comparable to the LightGBM baseline, while the economic quality of the simulated markdown curves improves. The share of interior optima increases from 19.8\% to 54.7\%, the share of minimum-limit recommendations decreases from 75.8\% to 37.7\%, and the share of curves crossing the break-even line increases from 24.2\% to 62.3\%.
+
+Overall, within the scope of the available data and the maintained identification assumptions, the proposed model produces more reasonable and actionable elasticity curves than the purely predictive baseline. Its main contribution is to improve the causal quality of the curve-generation step while remaining compatible with the existing markdown optimization framework.

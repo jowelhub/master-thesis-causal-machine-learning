@@ -1,0 +1,85 @@
+% Appendix A
+
+\chapter{Additional Methodological Details}
+
+\label{AppendixA}
+
+
+\section{Baseline Elasticity Simulation}
+
+For each holdout reference-week, the predictive LightGBM baseline is evaluated over the operational discount grid from 20\% to 70\%. All contextual variables are held fixed, while the discount variable (\texttt{discount}) is changed. This creates a simulated demand curve for the same reference-week under alternative markdown decisions.
+
+The predicted weekly sales at each discount are normalized by the prediction at the 20\% reference discount:
+
+\begin{equation}
+\text{sales multiplier}(d) =
+\frac{\widehat{\text{sales}}(d)}
+{\widehat{\text{sales}}(20\%)}.
+\end{equation}
+
+The break-even multiplier is the increase in units sold required to compensate for the lower discounted price:
+
+\begin{equation}
+\text{break-even}(d) =
+\frac{P(20\%)}
+{P(d)}
+=
+\frac{1-20\%}{1-d},
+\end{equation}
+
+where $P(d)$ is discounted price at discount $d$.
+
+A simulated discount is revenue-improving relative to 20\% only when the predicted sales multiplier is above the break-even multiplier. This diagnostic is used to identify whether the predictive baseline produces economically reasonable curves or instead generates boundary-oriented recommendations.
+
+\section{Hyperparameters}
+
+The LightGBM nuisance models used in the DML step are trained to estimate the conditional expectation of the outcome and the treatment given the pre-pricing covariates. The same configuration is used for both nuisance models. Cross-fitting is performed using leave-one-season-out folds to reduce temporal leakage.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{ll}
+\toprule
+\textbf{Hyperparameter} & \textbf{Value} \\
+\midrule
+Objective & regression \\
+Maximum boosting iterations & 1000 \\
+Learning rate & 0.01 \\
+Number of leaves & 127 \\
+Minimum child samples & 8 \\
+Subsample fraction & 0.8 \\
+Column subsample by tree & 0.8 \\
+L2 regularization & 0.03 \\
+Early stopping rounds & 20 \\
+Random seed & 42 \\
+Cross-fitting & leave-one-season-out \\
+\bottomrule
+\end{tabular}
+\caption{Hyperparameters of the LightGBM nuisance models used in the DML residualization step.}
+\label{tab:dml-hyperparams}
+\end{table}
+
+No monotonic constraint is imposed at the nuisance stage: the nuisance models estimate conditional means, while the causal price effect is captured in the final stage. Leave-one-season-out cross-fitting blocks temporal leakage and avoids predicting residuals on observations used to train the corresponding nuisance model.
+
+The Causal Forest is used as the heterogeneous final stage after residualization. It receives the residualized outcome, the residualized treatment, and the pre-pricing covariates used as heterogeneity features.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{ll}
+\toprule
+\textbf{Hyperparameter} & \textbf{Value} \\
+\midrule
+Number of trees & 1000 \\
+Minimum samples per leaf & 80 \\
+Random seed & 42 \\
+Parallel jobs & -1 \\
+Honest splitting & enabled \\
+Inference enabled & yes \\
+\bottomrule
+\end{tabular}
+\caption{Hyperparameters of the Causal Forest final stage.}
+\label{tab:cf-hyperparams}
+\end{table}
+
+The minimum leaf size is set conservatively to reduce noisy reference-level treatment effects. This is important because the final output is not only used for average interpretation, but also for individual reference-week elasticity curves. The nuisance models are not internal to the forest; they are fitted separately with LightGBM and their residuals are passed to \texttt{CausalForest}.

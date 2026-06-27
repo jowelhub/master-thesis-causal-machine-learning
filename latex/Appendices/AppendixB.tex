@@ -1,0 +1,17 @@
+% Appendix B
+
+\chapter{Source Code}
+
+\label{AppendixB}
+
+The source code associated with this thesis is available in the project GitHub repository:
+
+\begin{center}
+\url{https://github.com/jowelhub/master-thesis-causal-machine-learning}
+\end{center}
+
+Because this project was developed in collaboration with Mango, the original datasets cannot be made public. For this reason, the repository does not include the internal CSV files used in the empirical analysis. Instead, it contains a clean thesis-oriented notebook that documents the modelling workflow and preserves the outputs needed to understand the implementation. The notebook is intended to show the main steps of the analysis, including data preparation logic, baseline modelling, Double Machine Learning residualization, Causal Forest estimation, markdown-curve simulation, and diagnostic plots.
+
+During the research process, several exploratory notebooks were developed internally to test alternative specifications, debug the modelling pipeline, and compare different modelling choices. These intermediate notebooks are not included in the public repository, because they were part of the internal research workflow and depend on private data sources. The public notebook is therefore a curated version prepared specifically for the thesis submission and presentation: it focuses on the final methodology and results rather than on every exploratory iteration.
+
+In parallel, an internal production-oriented implementation of the causal machine learning framework was developed within Mango's private codebase. This implementation organizes the workflow using Python classes and is designed to run operational tasks through Apache Airflow DAGs on Databricks clusters. That internal implementation contains company-specific infrastructure, data access logic, and deployment details, so it cannot be shared publicly. The public GitHub repository should therefore be understood as the reproducible thesis-facing version of the work, while the private Mango repository contains the internal engineering implementation.

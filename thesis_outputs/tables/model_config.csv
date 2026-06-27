@@ -1,0 +1,8 @@
+Role,Variable
+treatment,actual_price
+raw outcome,y_week_per_season_trend
+model outcome,log_y_week_per_season_trend
+modelling space,log-linear
+reference discount,20%
+discount grid,20%–70% (11 points)
+confounders,19 columns

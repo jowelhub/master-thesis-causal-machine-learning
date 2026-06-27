@@ -1,0 +1,22 @@
+\chapter{Introduction}
+
+\label{Chapter1}
+
+\section{Business Context and Motivation}
+
+Mango is a global fashion retailer present in over 120 countries. During sales periods, products go through progressive markdowns over six consecutive weeks, and the quality of these discount decisions directly affects both revenue and end-of-season stock liquidation.
+
+Each product reference receives a weekly discount that can stay constant or increase over time, but not decrease. The decision is also constrained by predefined minimum and maximum discount limits and other business rules. This creates the central trade-off of markdown pricing: deeper discounts increase demand but reduce the unit price.
+
+The existing pipeline combines a LightGBM demand model \cite{ke2017lightgbm} with an optimization module. This thesis does not redesign the optimizer; it focuses on improving the elasticity curves used as its input. In the current predictive approach, simulated curves tend to recommend minimum discounts rather than finding a balanced middle ground.
+
+\section{Problem Statement and Hypothesis}
+
+In practice, historical discounts were far from random. Business teams naturally set prices by looking at stock, previous sales, product characteristics, and expected demand. Products with weak momentum or high remaining stock are more likely to receive deeper discounts, while strong-selling products usually receive smaller markdowns. Therefore, the observed relationship between discounts and sales does not necessarily represent the causal effect of changing price.
+
+Crucially, a model can be highly accurate at predicting historical sales and still produce unrealistic price-response curves when alternative discounts are simulated. The hypothesis of this thesis is that a causal machine learning approach can generate more reasonable markdown elasticity curves than the predictive baseline, while remaining compatible with the current optimization pipeline.
+
+\section{Objectives}
+\label{sec:objectives}
+
+The objective of this thesis is to replace the current predictive elasticity generator with a causal alternative. The proposed model should produce plausible price-response curves with interior optima rather than frequently getting stuck at the minimum allowed discount, while preserving forecast quality as a secondary diagnostic. It should also estimate heterogeneous effects at reference-week level and provide curves that can be used by the existing optimizer without changing its business constraints or interface.

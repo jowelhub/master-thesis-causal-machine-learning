@@ -1,0 +1,64 @@
+\chapter{Data Understanding}
+
+\label{Chapter2}
+
+\section{Original Dataset Description}
+
+The data comes from Mango's internal demand forecasting system. The original dataset is at reference-day level: each row corresponds to a sales prediction for a specific article and day, generated from a previous prediction snapshot. The empirical analysis is restricted to the Spain market and the Woman division, which keeps the setting homogeneous while preserving the markdown-pricing structure of the original pipeline.
+
+The available variables can be grouped into six categories, summarized in Table~\ref{tab:original-dataset-groups}. The dataset contains identification variables, product information, calendar variables, in-season commercial KPIs, price variables, and the sales target. Most of these variables are not of interest by themselves, but they describe the commercial context available before the markdown decision is made. This context is important because it may influence both the discount assigned by the business and the future sales of the product.
+
+Throughout the thesis, original price refers to \mbox{\texttt{full\_price}}, discounted price refers to \mbox{\texttt{actual\_price}}, discount refers to \mbox{\texttt{discount}}, and units sold refers to \mbox{\texttt{y}}.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabularx}{\textwidth}{p{3.0cm} X}
+\textbf{Group} & \textbf{Description} \\
+\hline
+Identification variables & Product reference, season, market, and prediction-snapshot identifiers used to anchor each observation in time. \\
+Product variables & Product family, original season price, and other reference-level characteristics. \\
+Calendar variables & Position of the observation within the sales period, including sales week and timing variables. \\
+In-season KPIs & Pre-pricing sales and stock indicators, such as accumulated sales, average sales, stock level, coverage, and season performance. \\
+Price variables & Original price (\mbox{\texttt{full\_price}}), discounted price (\mbox{\texttt{actual\_price}}), and discount (\mbox{\texttt{discount}}). \\
+Target variable & units sold (\texttt{y}), later aggregated to weekly demand for modelling. \\
+\end{tabularx}
+\caption{Variable groups in the original dataset.}
+\label{tab:original-dataset-groups}
+\end{table}
+
+\section{From Daily to Weekly}
+
+The original data contains several daily rows for each product reference, generated from different prediction origins. However, markdown decisions are taken at weekly level. For this reason, the dataset is transformed so that the modelling unit matches the business decision unit.
+
+For each sales week, only the snapshot taken three weeks before the start of the week is kept. This anchor is used because it represents the information available before the discount is decided. Keeping this timing is important for the causal setup: stock, accumulated sales, and other context variables must be measured before the discount decision is made, not after it. Daily sales are then aggregated into \mbox{\texttt{y\_week = sum(y)}}, while the context variables are taken from the three-week-prior snapshot.
+
+The final dataset contains one row per reference $\times$ season $\times$ sales week, with sale weeks ranging from 1 to 6. The train-test split is season-based: three seasons are used for training and one season is held out for testing.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lrrrrrr}
+\textbf{Split} & \textbf{Rows} & \textbf{Seasons} & \textbf{References} & \textbf{Sale weeks} & \textbf{Mean units} & \textbf{Median units} \\
+\hline
+Train & 33,691 & 3 & 5,790 & 1--6 & 178.4 & 53 \\
+Test & 12,136 & 1 & 2,079 & 1--6 & 158.0 & 48 \\
+\end{tabular}
+\caption{Weekly modelling sample used in the empirical analysis.}
+\label{tab:weekly-sample-summary}
+\end{table}
+
+The elasticity simulation uses the operational discount grid from 20\% to 70\%, which is the relevant support for the optimizer. Some raw historical observations can fall outside this interval, but the simulation is restricted to the range used in the curve diagnostics and in the optimization step.
+
+For modelling, the raw weekly target is normalized by a season-level demand index, computed as the median average daily gross sales within the season. The resulting variable, \mbox{\texttt{y\_week\_per\_season\_trend}}, reduces differences in overall demand scale across seasons. This normalized variable is the final target variable used in the causal specification.
+
+\section{Variables Used for Modelling}
+\label{sec:variables-modelling}
+
+The final modelling dataset contains three types of variables. The target variable is the season-normalized version of units sold, \mbox{\texttt{y\_week\_per\_season\_trend}}. The main price variable is discounted price (\mbox{\texttt{actual\_price}}). The discount (\mbox{\texttt{discount}}) is also available and satisfies
+\[
+\mbox{\texttt{actual\_price}} = \mbox{\texttt{full\_price}} \times (1 - \mbox{\texttt{discount}}),
+\]
+where \mbox{\texttt{full\_price}} is the original price.
+
+The remaining variables are pre-pricing covariates describing the commercial context of each reference-week. They include calendar position, product family, original price, stock, coverage, accumulated sales performance, pre-sales indicators, and material composition when available. These variables are used as controls because they are observed before the weekly discount and summarize the information that may confound the relationship between price and demand. In the next chapter, this structure is interpreted from a causal perspective.

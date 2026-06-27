@@ -1,0 +1,130 @@
+\chapter{Results}
+
+\label{Chapter5}
+
+\section{Final Model and Predictive Performance}
+
+The final model is the log-linear DML specification using discounted price as the treatment, with a Causal Forest final stage to estimate heterogeneous price effects at reference-week level. As justified in Section~\ref{sec:specification-dml}, this choice aligns the demand specification with the revenue objective and allows interior revenue optima.
+
+The outcome is season-normalized weekly units sold, used in logarithmic scale, so the estimated effects are local semi-elasticities. The first diagnostic compares predictive performance against the existing LightGBM baseline. Prediction accuracy is not the main objective, but it remains relevant because the resulting elasticity curves must remain compatible with the existing optimization module.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{llrrr}
+\toprule
+\textbf{Model} & \textbf{Split} & \textbf{WMAPE} & \textbf{$R^2$} & \textbf{N} \\
+\midrule
+LightGBM baseline & Train OOF & 0.312 & 0.797 & 33,691 \\
+LightGBM baseline & Test & 0.425 & 0.706 & 12,136 \\
+Causal Forest & Train OOF & 0.305 & 0.815 & 33,691 \\
+Causal Forest & Test observed sales & 0.417 & 0.731 & 12,136 \\
+\bottomrule
+\end{tabular}
+\caption{Predictive performance of the LightGBM baseline and final Causal Forest model. Test metrics are computed on the 12,136 held-out reference-week rows with observed sales.}
+\label{tab:model-predictive-performance}
+\end{table}
+
+Table~\ref{tab:model-predictive-performance} shows that the causal specification does not reduce predictive quality. On the observed holdout rows, the Causal Forest obtains a slightly lower WMAPE and a slightly higher $R^2$ than the LightGBM baseline. However, predictive metrics are not enough in this application: the model must also generate plausible counterfactual demand curves when alternative discounts are simulated.
+
+\section{Economic Quality of the Elasticity Curves}
+
+The main evaluation criterion is whether the generated elasticity curves are economically reasonable and useful for the markdown optimizer. In the existing predictive approach, simulated curves often lead to boundary recommendations, where the optimizer recommends the minimum allowed discount instead of finding a balanced middle ground. This is problematic because markdown pricing should involve a trade-off between volume and unit price.
+
+The LightGBM baseline and the final Causal Forest model are compared using curve-quality diagnostics: the share of recommendations at the minimum limit, the share at the maximum limit, the share of interior optima, the median optimal discount, and the share of curves that cross the break-even sales multiplier.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lrrrrr}
+\toprule
+\textbf{Model} & \textbf{Min limit} & \textbf{Max limit} & \textbf{Interior} & \textbf{Median opt.} & \textbf{Break-even} \\
+\midrule
+LightGBM baseline & 75.8\% & 4.4\% & 19.8\% & 20\% & 24.2\% \\
+Causal Forest & 37.7\% & 7.6\% & 54.7\% & 35\% & 62.3\% \\
+\bottomrule
+\end{tabular}
+\caption{Curve-quality diagnostics over the operational discount grid. The diagnostics emphasize robust shares rather than unstable mean revenue multipliers.}
+\label{tab:curve-quality}
+\end{table}
+
+Table~\ref{tab:curve-quality} shows a clear improvement in curve quality. The LightGBM baseline places 75.8\% of optimal recommendations at the minimum allowed discount, confirming this tendency to get stuck at the lowest boundary. By contrast, the Causal Forest reduces minimum-limit optima to 37.7\% and increases interior optima to 54.7\%.
+
+This improvement is consistent with the specification analysis in Section~\ref{sec:specification-dml}. The selected log-linear form can produce interior revenue optima, and the causal model generates curves that better reflect the markdown trade-off: deeper discounts increase demand, but the additional volume does not always compensate for the lower price.
+
+\begin{figure}[h]
+\centering
+\IfFileExists{Figures/global_comparison.png}{\includegraphics[width=0.9\textwidth]{global_comparison}}{\fbox{\parbox{0.9\textwidth}{\centering Add \texttt{global\_comparison.png} to the \texttt{Figures} folder.}}}
+\caption{Aggregate sales multiplier curves for the LightGBM baseline and the final Causal Forest model. Sales are normalized at the 20\% reference discount. The break-even line represents the sales increase required to compensate for the lower unit price.}
+\label{fig:global-comparison}
+\end{figure}
+
+Figure~\ref{fig:global-comparison} supports the same conclusion. The Causal Forest curve shows a smoother and more economically meaningful demand response than the predictive baseline. As discounts increase, the causal model predicts higher sales multipliers, but not enough to make the deepest discount always optimal.
+
+Because revenue multiplier averages can be unstable when predicted demand at the reference discount is very small, the analysis emphasizes robust curve-quality measures such as interior optima and break-even crossings.
+
+\section{Heterogeneous Treatment Effects}
+
+The final model estimates a different local price effect for each reference-week. This is necessary because the optimizer operates at reference-week level, not only at aggregate level. A single average price effect would ignore differences across product families, stock positions, price levels, and moments of the sales campaign.
+
+The distribution of estimated CATE values is economically reasonable. The estimated local effects are negative across the holdout sample, meaning that higher prices are associated with lower expected demand after controlling for pre-pricing confounders.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lr}
+\toprule
+\textbf{Statistic} & \textbf{$\hat{\tau}$} \\
+\midrule
+Mean & -0.031 \\
+Median & -0.024 \\
+Standard deviation & 0.027 \\
+P5 & -0.087 \\
+P25 & -0.044 \\
+P75 & -0.008 \\
+P95 & -0.001 \\
+Share negative & 100\% \\
+\bottomrule
+\end{tabular}
+\caption{Distribution of Causal Forest local semi-elasticities on the holdout sample. Negative values indicate that higher prices reduce expected demand.}
+\label{tab:cate-distribution}
+\end{table}
+
+The mean local semi-elasticity is approximately -0.031, which means that, on average, a one-euro increase in price reduces normalized weekly demand by approximately 3.1\%, holding the observed pre-pricing context fixed. The median effect is slightly smaller in magnitude, around 2.4\%, while the 5th and 95th percentiles show clear heterogeneity across reference-weeks.
+
+This spread confirms that the model is not applying the same demand response to every product. Some reference-weeks are more price-sensitive than others, consistent with differences in product type, price level, stock pressure, sales momentum, and timing within the sales period.
+
+\IfFileExists{Figures/cate_heterogeneity.pdf}{%
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.9\textwidth]{cate_heterogeneity}
+\caption{Distribution of estimated local price effects. Negative values indicate that higher prices reduce expected demand. The spread of the distribution shows that the final model captures heterogeneous markdown sensitivity across reference-weeks.}
+\label{fig:cate-heterogeneity}
+\end{figure}
+}{}
+
+\section{Reference-Level Examples}
+
+The previous sections evaluate the model at aggregate level, but the practical use case requires one elasticity curve per reference-week. Figure~\ref{fig:reference-examples} compares the LightGBM baseline and the Causal Forest curves for selected product examples.
+
+\begin{figure}[h]
+\centering
+\IfFileExists{Figures/elasticity_examples_baseline_vs_causal.png}{\includegraphics[width=0.95\textwidth]{elasticity_examples_baseline_vs_causal}}{\fbox{\parbox{0.95\textwidth}{\centering Add \texttt{elasticity\_examples\_baseline\_vs\_causal.png} to the \texttt{Figures} folder.}}}
+\caption{Reference-level comparison between the LightGBM baseline and the Causal Forest elasticity curves for selected product examples. Sales multipliers are normalized at the 20\% reference discount and compared with the break-even multiplier.}
+\label{fig:reference-examples}
+\end{figure}
+
+The examples show how the causal model changes the simulated demand response. The predictive baseline can produce flatter, irregular, or boundary-oriented curves because it is trained under the historical pricing policy. The Causal Forest curves are smoother and more aligned with the expected relationship between discounts and demand.
+
+This matters because the existing optimization module consumes reference-week-level curves over a discount grid. The contribution of the causal model is therefore to improve the curve-generation step while keeping the optimization interface unchanged.
+
+\section{Limitations of the Empirical Results}
+\label{sec:results-limitations}
+
+The empirical results should be interpreted within the scope of the available data and the maintained causal assumptions. First, the causal interpretation depends on unconfoundedness. Historical markdowns were not randomly assigned, and business teams may have used information that is not fully captured in the dataset. If relevant pricing drivers are missing, the estimated effects may still contain residual confounding.
+
+Second, the curves should not be extrapolated outside the price range supported by the data. The simulations are evaluated on the operational discount grid from 20\% to 70\%, where the model has stronger empirical support.
+
+Third, the analysis is restricted to the Spain market and the Woman division. This makes the setting more homogeneous, but limits generalization to other countries, divisions, and product groups.
+
+Finally, the approach is static at reference-week level. It does not explicitly model stock depletion, customer anticipation, or interactions between consecutive weekly markdowns, even though markdown decisions are sequential during the sales campaign.

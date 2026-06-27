@@ -1,0 +1,3 @@
+Split,discount_n,discount_p1,discount_p5,discount_p25,discount_median,discount_mean,discount_p75,discount_p95,discount_p99,actual_price_n,actual_price_p1,actual_price_p5,actual_price_p25,actual_price_median,actual_price_mean,actual_price_p75,actual_price_p95,actual_price_p99,full_price_n,full_price_p1,full_price_p5,full_price_p25,full_price_median,full_price_mean,full_price_p75,full_price_p95,full_price_p99
+Train,33691,0.17,0.22,0.33,0.4,0.40974651984209437,0.5,0.6,0.68,0,,,,,,,,,33691,9.99,15.99,25.99,29.99,39.61828233059274,45.99,79.99,159.99
+Test,146983,0.0,0.13,0.35,0.57,0.5453712334079449,0.74,0.87,0.89,146983,3.99,4.99,9.99,17.99,24.093889565459957,27.99,59.99,139.99,146983,15.99,19.99,29.99,39.99,54.521370294523855,59.99,129.99,260.0
